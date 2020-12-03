@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 from data import NYUDepthDataModule
 from unet_layers import DoubleConv, Up, Down
+from unet_encoder import UNetEncoder
+from unet_decoder import UNetDecoder
 
 
 class VariationalUNet(nn.Module):
@@ -41,6 +43,10 @@ class VariationalUNet(nn.Module):
         self.fc_mu = nn.Linear(1024*3*4, latent_dim)
         self.fc_logvar = nn.Linear(1024*3*4, latent_dim)
 
+        self.encoder_x = UNetEncoder()
+        self.encoder_xy = UNetEncoder(x_and_y=True)
+        self.decoder = UNetDecoder()
+
         self.projection_1 = nn.Linear(latent_dim, 1024*3*4)
         self.projection_2 = nn.Sequential(
             nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
@@ -50,45 +56,25 @@ class VariationalUNet(nn.Module):
 
     def forward(self, x, y):
         x = x.squeeze(1)
-        # concat x and y
-        # x = torch.cat([x, y], dim=1)
 
-        # down path / encoder
-        xi = [self.layers[0](x)]
-        for layer in self.layers[1:self.num_layers]:
-            output = layer(xi[-1])
-            xi.append(output)
-
-        # embedding
-        emb = xi[-1]
-        emb = emb.view(emb.size(0), -1)
-
-        # variational
-        mu = self.fc_mu(emb)
-        logvar = self.fc_logvar(emb)
+        enc_x_i, enc_x_mu, enc_x_logvar = self.encoder_x(x)
+        enc_xy_i, enc_xy_mu, enc_xy_logvar = self.encoder_xy(x, y)
 
         # kl
-        z = self._reparameterize(mu, logvar)
-        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), 1)
+        z = self._reparameterize(enc_xy_mu, enc_xy_logvar)
+        kl = -0.5 * torch.sum(1 + enc_xy_logvar - enc_xy_mu.pow(2) - enc_xy_logvar.exp(), 1)
 
         # project emb and z to match original decoder dims
-        first_dec_out = xi[-1]
         z = self.projection_1(z)
-        z = z.view(first_dec_out.size())
+        z = z.view(enc_x_i[-1].size())
 
-        first_dec_out = torch.cat([first_dec_out, z], dim=1)
-        first_dec_out = self.projection_2(first_dec_out)
-        xi[-1] = first_dec_out
+        concat_enc_out_z = torch.cat([enc_x_i[-1], z], dim=1)
+        concat_enc_out_z = self.projection_2(concat_enc_out_z)
+        enc_x_i[-1] = concat_enc_out_z
 
-        # up path / decoder
-        for i, layer in enumerate(self.layers[self.num_layers:-1]):
-            decoder_out = xi[-1]
-            encoder_matching = xi[-2 - i]
-            xi[-1] = layer(decoder_out, encoder_matching)
-        # Final conv layer of UNet
-        output = self.layers[-1](xi[-1])
+        pred = self.decoder(enc_x_i)
 
-        return output, kl
+        return pred, kl
 
     def _reparameterize(self, mu, logvar):
         if self.training:

@@ -35,7 +35,7 @@ class UNetEncoder(nn.Module):
         self.fc_logvar = nn.Linear(1024*3*4, latent_dim)
 
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
 
         x = x.squeeze(1)
 
