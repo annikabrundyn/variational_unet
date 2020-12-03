@@ -35,10 +35,11 @@ class VAEModel(pl.LightningModule):
         self.save_hyperparameters()
 
         # TODO: generalize for multi frame
-        self.in_channels = 2*3
+        #self.in_channels = 3 + 1
+        self.in_channels = 3
 
         self.net = VariationalUNet(input_channels=self.in_channels,
-                                   output_channels=3,
+                                   output_channels=1,
                                    enc_out_dim=enc_out_dim,
                                    latent_dim=latent_dim,
                                    num_layers=num_layers,
@@ -125,20 +126,10 @@ if __name__ == "__main__":
     dm = NYUDepthDataModule(
         args.data_dir,
         frames_per_sample=1,
-        frames_to_drop=0,
-        is_color_input=True,
-        is_color_output=True,
-        extra_info=False,
+        resize=0.1,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
     )
-    dm.setup()
-    print("dm setup")
-
-    # sanity check
-    print("size of trainset:", len(dm.train_samples))
-    print("size of validset:", len(dm.val_samples))
-    print("size of testset:", len(dm.test_samples))
 
     img, target = next(iter(dm.train_dataloader()))
     print(img.shape)

@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from data import NYUDepthDataModule
 from unet_layers import DoubleConv, Up, Down
 
+
 class VariationalUNet(nn.Module):
     def __init__(
             self,
@@ -40,11 +41,6 @@ class VariationalUNet(nn.Module):
         self.fc_mu = nn.Linear(1024*3*4, latent_dim)
         self.fc_logvar = nn.Linear(1024*3*4, latent_dim)
 
-        # initialize weights to try prevent large std and nan values
-        #self.fc_mu.weight.data.uniform_(-0.01, 0.01)
-        #self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
-        #self.fc_logvar.weight.data.fill_(0)
-
         self.projection_1 = nn.Linear(latent_dim, 1024*3*4)
         self.projection_2 = nn.Sequential(
             nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
@@ -52,17 +48,10 @@ class VariationalUNet(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-    def gaussian_like(self, mean, logscale, sample):
-        scale = torch.exp(logscale)
-        dist = torch.distributions.Normal(mean, scale)
-        log_pxz = dist.log_prob(sample)
-        log_pxz = log_pxz.sum(dim=(1,2,3))
-        return log_pxz
-
     def forward(self, x, y):
-
+        x = x.squeeze(1)
         # concat x and y
-        x = torch.cat([x, y], dim=1)
+        # x = torch.cat([x, y], dim=1)
 
         # down path / encoder
         xi = [self.layers[0](x)]
@@ -112,17 +101,15 @@ class VariationalUNet(nn.Module):
 
 
 
-
-
-
-dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/', num_workers=0, resize=0.1, batch_size=2)
-
-in_channels = 3+1
-
-model = VariationalUNet(input_channels=in_channels, output_channels=1)
-
-img, target = next(iter(dm.train_dataloader()))
-img = img.squeeze(1)
-model(img, target)
-
-print("hey")
+#
+# dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/', num_workers=0, resize=0.1, batch_size=2)
+#
+# in_channels = 3+1
+#
+# model = VariationalUNet(input_channels=in_channels, output_channels=1)
+#
+# img, target = next(iter(dm.train_dataloader()))
+# img = img.squeeze(1)
+# model(img, target)
+#
+# print("hey")
