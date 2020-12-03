@@ -4,10 +4,10 @@ import pytorch_lightning as pl
 
 from argparse import ArgumentParser
 
-from data.right_data import RightDaVinciDataModule
+from data import NYUDepthDataModule
 from pytorch_lightning.metrics.functional import ssim, psnr
 
-from models.right_view.vae.vae_unet import VariationalUNet
+from vae_unet import VariationalUNet
 
 
 class VAEModel(pl.LightningModule):
@@ -87,7 +87,7 @@ class VAEModel(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/da_vinci/daVinci_data", help="path to davinci data")
+        parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/nyu_depth/data/")
         parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--enc_out_dim", type=int, default=128)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # data
-    dm = RightDaVinciDataModule(
+    dm = NYUDepthDataModule(
         args.data_dir,
         frames_per_sample=1,
         frames_to_drop=0,

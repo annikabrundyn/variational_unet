@@ -9,6 +9,7 @@ from torch.utils.data import random_split
 import pytorch_lightning as pl
 from PIL import Image
 
+
 class NYUDepth(Dataset):
 
     def __init__(self,
@@ -26,8 +27,7 @@ class NYUDepth(Dataset):
         new_width = round(640*resize)
 
         if not img_transform:
-            self.img_transform = transforms.Compose([transforms.Grayscale(),
-                                                     transforms.Resize((new_height, new_width)),
+            self.img_transform = transforms.Compose([transforms.Resize((new_height, new_width)),
                                                      transforms.ToTensor()])
         else:
             self.img_transform = img_transform
@@ -129,7 +129,7 @@ class NYUDepthDataModule(pl.LightningDataModule):
             frames_per_sample: int = 1,
             resize: float = 0.5,
             val_split: float = 0.2,
-            num_workers: int = 4,
+            num_workers: int = 8,
             batch_size: int = 32,
             seed: int = 42,
             *args,
@@ -174,5 +174,6 @@ class NYUDepthDataModule(pl.LightningDataModule):
     #                         num_workers=self.num_workers)
     #     return loader
 
-#ds = NYUDepth('/Users/annikabrundyn/Developer/nyu_depth/data/')
-#dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
+ds = NYUDepth('/Users/annikabrundyn/Developer/nyu_depth/data/')
+dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
+print("hey")

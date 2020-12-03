@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from data import NYUDepthDataModule
+from unet_layers import DoubleConv, Up, Down
 
 class VariationalUNet(nn.Module):
     def __init__(
@@ -35,15 +37,15 @@ class VariationalUNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        self.fc_mu = nn.Linear(1024 * 12 * 24, latent_dim)
-        self.fc_logvar = nn.Linear(1024 * 12 * 24, latent_dim)
+        self.fc_mu = nn.Linear(1024*3*4, latent_dim)
+        self.fc_logvar = nn.Linear(1024*3*4, latent_dim)
 
         # initialize weights to try prevent large std and nan values
-        self.fc_mu.weight.data.uniform_(-0.01, 0.01)
+        #self.fc_mu.weight.data.uniform_(-0.01, 0.01)
         #self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
-        self.fc_logvar.weight.data.fill_(0)
+        #self.fc_logvar.weight.data.fill_(0)
 
-        self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
+        self.projection_1 = nn.Linear(latent_dim, 1024*3*4)
         self.projection_2 = nn.Sequential(
             nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
             nn.BatchNorm2d(1024),
@@ -108,70 +110,19 @@ class VariationalUNet(nn.Module):
             z = mu
         return z
 
-class DoubleConv(nn.Module):
-    """
-    [ Conv2d => BatchNorm (optional) => ReLU ] x 2
-    """
-
-    def __init__(self, in_ch: int, out_ch: int):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
-class Down(nn.Module):
-    """
-    Downscale with MaxPool => DoubleConvolution block
-    """
-
-    def __init__(self, in_ch: int, out_ch: int):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            DoubleConv(in_ch, out_ch)
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
-class Up(nn.Module):
-    """
-    Upsampling (by either bilinear interpolation or transpose convolutions)
-    followed by concatenation of feature map from contracting path, followed by DoubleConv.
-    """
 
-    def __init__(self, in_ch: int, out_ch: int, bilinear: bool = False):
-        super().__init__()
-        self.upsample = None
-        if bilinear:
-            self.upsample = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
-                nn.Conv2d(in_ch, in_ch // 2, kernel_size=1),
-            )
-        else:
-            self.upsample = nn.ConvTranspose2d(in_ch, in_ch // 2, kernel_size=2, stride=2)
+dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/', num_workers=0, resize=0.1, batch_size=2)
 
-        self.conv = DoubleConv(in_ch, out_ch)
+in_channels = 3+1
 
-    def forward(self, x1, x2):
-        x1 = self.upsample(x1)
+model = VariationalUNet(input_channels=in_channels, output_channels=1)
 
-        # Pad x1 to the size of x2
-        diff_h = x2.shape[2] - x1.shape[2]
-        diff_w = x2.shape[3] - x1.shape[3]
+img, target = next(iter(dm.train_dataloader()))
+img = img.squeeze(1)
+model(img, target)
 
-        x1 = F.pad(x1, [diff_w // 2, diff_w - diff_w // 2, diff_h // 2, diff_h - diff_h // 2])
-
-        # Concatenate along the channels axis
-        x = torch.cat([x2, x1], dim=1)
-        return self.conv(x)
+print("hey")
