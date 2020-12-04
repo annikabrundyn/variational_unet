@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from data import NYUDepthDataModule
-from unet_layers import DoubleConv, Up, Down
 from unet_encoder import UNetEncoder
 from unet_decoder import UNetDecoder
 
@@ -88,22 +86,3 @@ class VariationalUNet(nn.Module):
         flat_dim = enc_out[-1].view(-1).shape[0]
 
         return flat_dim
-
-
-
-
-
-
-
-#
-# dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/', num_workers=0, resize=0.1, batch_size=2)
-#
-# in_channels = 3+1
-#
-# model = VariationalUNet(input_channels=in_channels, output_channels=1)
-#
-# img, target = next(iter(dm.train_dataloader()))
-# img = img.squeeze(1)
-# model(img, target)
-#
-# print("hey")
