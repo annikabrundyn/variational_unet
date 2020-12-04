@@ -166,14 +166,3 @@ class NYUDepthDataModule(pl.LightningDataModule):
                             shuffle=False,
                             num_workers=self.num_workers)
         return loader
-
-    # def test_dataloader(self):
-    #     loader = DataLoader(self.testset,
-    #                         batch_size=self.batch_size,
-    #                         shuffle=False,
-    #                         num_workers=self.num_workers)
-    #     return loader
-
-ds = NYUDepth('/Users/annikabrundyn/Developer/nyu_depth/data/')
-dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
-print("hey")

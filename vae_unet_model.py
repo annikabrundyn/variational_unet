@@ -53,6 +53,7 @@ class VAEModel(pl.LightningModule):
         logs = {
             "mse_loss": mse_loss.mean(),
             "kl": kl.mean(),
+            "scaled_kl": self.hparams.kl_coeff*kl.mean(),
             "loss": loss,
             "ssim": ssim_val,
         }
@@ -78,7 +79,6 @@ class VAEModel(pl.LightningModule):
         parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/nyu_depth/data/")
         parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
-        parser.add_argument("--enc_out_dim", type=int, default=128)
         parser.add_argument("--latent_dim", type=int, default=128)
         parser.add_argument("--kl_coeff", type=float, default=0.001)
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
