@@ -13,6 +13,7 @@ from vae_unet import VariationalUNet
 class VAEModel(pl.LightningModule):
     def __init__(
             self,
+            resize: float,
             frames_per_sample: int = 1,
             frames_to_drop: int = 0,
             latent_dim: int = 128,
@@ -30,7 +31,7 @@ class VAEModel(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.net = VariationalUNet()
+        self.net = VariationalUNet(resize)
 
     def forward(self, x, y):
         return self.net(x, y)
@@ -42,11 +43,6 @@ class VAEModel(pl.LightningModule):
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
         loss = mse_loss + (self.hparams.kl_coeff*kl)
         loss = loss.mean()
-
-        print("kl: ", kl)
-        print("scaled kl: ", self.hparams.kl_coeff*kl)
-        print("mse: ", mse_loss)
-        print("loss: ", loss)
 
         ssim_val = ssim(pred, target)
 
@@ -70,7 +66,7 @@ class VAEModel(pl.LightningModule):
         loss, logs, img_logs = self.step(batch)
         self.log_dict({f"train_{k}": v for k, v in logs.items()})
 
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+        if self.hparams.log_tb_imgs and batch_idx % self.hparams.tb_img_freq == 0:
             self.logger.experiment.add_image('train_input', img_logs['input'], self.trainer.global_step)
             self.logger.experiment.add_image('train_pred', img_logs['pred'], self.trainer.global_step)
             self.logger.experiment.add_image('train_target', img_logs['target'], self.trainer.global_step)
@@ -81,7 +77,7 @@ class VAEModel(pl.LightningModule):
         loss, logs, img_logs = self.step(batch)
         self.log_dict({f"val_{k}": v for k, v in logs.items()})
 
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+        if self.hparams.log_tb_imgs and batch_idx % self.hparams.tb_img_freq == 0:
             self.logger.experiment.add_image('val_input', img_logs['input'], self.trainer.global_step)
             self.logger.experiment.add_image('val_pred', img_logs['pred'], self.trainer.global_step)
             self.logger.experiment.add_image('val_target', img_logs['target'], self.trainer.global_step)
@@ -96,6 +92,7 @@ class VAEModel(pl.LightningModule):
         parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--latent_dim", type=int, default=128)
+        parser.add_argument("--resize", type=float, default=0.1)
         parser.add_argument("--kl_coeff", type=float, default=0.0001)
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
@@ -128,7 +125,7 @@ if __name__ == "__main__":
     dm = NYUDepthDataModule(
         args.data_dir,
         frames_per_sample=1,
-        resize=0.1,
+        resize=args.resize,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
     )

@@ -31,10 +31,6 @@ class UNetEncoder(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        self.fc_mu = nn.Linear(1024*3*4, latent_dim)
-        self.fc_logvar = nn.Linear(1024*3*4, latent_dim)
-
-
     def forward(self, x, y=None):
 
         x = x.squeeze(1)
@@ -49,12 +45,4 @@ class UNetEncoder(nn.Module):
             output = layer(xi[-1])
             xi.append(output)
 
-        # embedding
-        emb = xi[-1]
-        emb = emb.view(emb.size(0), -1)
-
-        # variational
-        mu = self.fc_mu(emb)
-        logvar = self.fc_logvar(emb)
-
-        return xi, mu, logvar
+        return xi
