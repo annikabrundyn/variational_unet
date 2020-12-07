@@ -56,6 +56,9 @@ class VariationalUNet(nn.Module):
         # decoder
         pred = self.decoder(enc_x_i)
 
+        # feed prediction through sigmoid
+        pred = F.sigmoid(pred)
+
         return pred, kl
 
     def _reparameterize(self, mu, logvar):
