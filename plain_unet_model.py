@@ -1,12 +1,10 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 import torch
-import torch.nn.functional as F
-import torchvision
-from pytorch_lightning.metrics.functional import ssim, psnr
+from pytorch_lightning.metrics.functional import ssim
 
-from plain_unet.unet import UNet
+from unet import UNet
 from data import NYUDepthDataModule
 
 
