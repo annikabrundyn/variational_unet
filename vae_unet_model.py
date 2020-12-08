@@ -22,17 +22,17 @@ class VAEModel(pl.LightningModule):
             latent_dim: int = 128,
             kl_coeff: float = 0.0001,
             lr: float = 0.001,
+            refine_steps: int = 2,
             log_tb_imgs: bool = False,
             tb_img_freq: int = 10000,
             save_img_freq: int = 50,
-            batch_size: int = 128,
             **kwargs
     ):
         super().__init__()
 
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
-        self.refine_steps = 5
+        self.refine_steps = refine_steps
 
         self.save_hyperparameters()
 
@@ -134,8 +134,9 @@ class VAEModel(pl.LightningModule):
         parser.add_argument("--resize", type=float, default=0.1)
         parser.add_argument("--kl_coeff", type=float, default=0.0001)
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
-        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
-        parser.add_argument("--tb_img_freq", type=int, default=10000)
+        parser.add_argument("--refine_steps", type=int, default=2)
+        parser.add_argument("--log_tb_imgs", action='store_true', default=True)
+        parser.add_argument("--tb_img_freq", type=int, default=5000)
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
