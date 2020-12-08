@@ -57,7 +57,7 @@ class VariationalUNet(nn.Module):
         pred = self.decoder(enc_x_i)
 
         # feed prediction through sigmoid
-        pred = F.sigmoid(pred)
+        pred = pred.sigmoid()
 
         return pred, kl
 
