@@ -41,8 +41,8 @@ class VariationalUNet(nn.Module):
         enc_x_i = self.encoder_x(x)
 
         if y is None:
-            mu = torch.zeros(x.shape[0], self.latent_dim)
-            logvar = torch.zeros(x.shape[0], self.latent_dim)
+            mu = torch.zeros(x.shape[0], self.latent_dim, device=x.device)
+            logvar = torch.zeros(x.shape[0], self.latent_dim, device=x.device)
         else:
             enc_xy_i = self.encoder_xy(x, y)
 
