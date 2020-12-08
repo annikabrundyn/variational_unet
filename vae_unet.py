@@ -29,6 +29,10 @@ class VariationalUNet(nn.Module):
         self.fc_mu = nn.Linear(flat_enc_dim, latent_dim)
         self.fc_logvar = nn.Linear(flat_enc_dim, latent_dim)
 
+        # initialize weights to try prevent large std and nan values - std xavier (-0.003, 0.003)
+        self.fc_mu.weight.data.normal_(0, 0.0001)
+        self.fc_logvar.weight.data.normal_(0, 0.0001)
+
         self.projection_1 = nn.Linear(latent_dim, flat_enc_dim)
         self.projection_2 = nn.Sequential(
             nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
