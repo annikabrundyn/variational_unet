@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
@@ -39,6 +40,12 @@ class VAEModel(pl.LightningModule):
     def step(self, batch):
         img, target = batch
         pred, kl = self(img, target)
+
+        # output is parameters - sample pred from normal distribution
+        log_scale = nn.Parameter(torch.Tensor([0.0]))
+        scale = torch.exp(log_scale)
+        dist = torch.distributions.Normal(pred, scale)
+        pred = dist.sample()
 
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
         loss = mse_loss + (self.hparams.kl_coeff*kl)
