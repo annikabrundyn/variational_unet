@@ -18,6 +18,7 @@ class VariationalUNet(nn.Module):
             bilinear: bool = False
     ):
         super().__init__()
+        self.latent_dim = latent_dim
 
         self.encoder_x = UNetEncoder()
         self.encoder_xy = UNetEncoder(x_and_y=True)
@@ -35,16 +36,20 @@ class VariationalUNet(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
 
         enc_x_i = self.encoder_x(x)
-        enc_xy_i = self.encoder_xy(x, y)
 
-        # mu, logvar
-        emb_xy = enc_xy_i[-1]
-        emb_xy = emb_xy.view(emb_xy.size(0), -1)
-        mu = self.fc_mu(emb_xy)
-        logvar = self.fc_logvar(emb_xy)
+        if y is None:
+            mu = torch.zeros(x.shape[0], self.latent_dim)
+            logvar = torch.zeros(x.shape[0], self.latent_dim)
+        else:
+            enc_xy_i = self.encoder_xy(x, y)
+
+            emb_xy = enc_xy_i[-1]
+            emb_xy = emb_xy.view(emb_xy.size(0), -1)
+            mu = self.fc_mu(emb_xy)
+            logvar = self.fc_logvar(emb_xy)
 
         # kl
         z = self._reparameterize(mu, logvar)
@@ -62,13 +67,9 @@ class VariationalUNet(nn.Module):
         return pred, kl
 
     def _reparameterize(self, mu, logvar):
-        if self.training:
-            std = torch.exp(0.5 * logvar)
-            eps = torch.randn_like(std)
-            z = mu + std * eps
-        else:
-            z = mu
-        return z
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + eps * std
 
     def _project_and_concat(self, enc_last_output, z):
         z = self.projection_1(z)

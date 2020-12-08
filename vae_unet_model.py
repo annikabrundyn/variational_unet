@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
+import torchvision
+
 from argparse import ArgumentParser
 
 from data import NYUDepthDataModule
@@ -29,17 +31,18 @@ class VAEModel(pl.LightningModule):
 
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
+        self.refine_steps = 2
 
         self.save_hyperparameters()
 
         self.net = VariationalUNet(resize)
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         return self.net(x, y)
 
-    def step(self, batch):
+    def _train_step(self, batch):
         img, target = batch
-        pred, kl = self(img, target)
+        pred, kl = self(x=img, y=target)
 
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
         loss = mse_loss + (self.hparams.kl_coeff*kl)
@@ -64,7 +67,7 @@ class VAEModel(pl.LightningModule):
         return loss, logs, img_logs
 
     def training_step(self, batch, batch_idx):
-        loss, logs, img_logs = self.step(batch)
+        loss, logs, img_logs = self._train_step(batch)
         self.log_dict({f"train_{k}": v for k, v in logs.items()})
 
         if self.hparams.log_tb_imgs and batch_idx % self.hparams.tb_img_freq == 0:
@@ -74,14 +77,47 @@ class VAEModel(pl.LightningModule):
 
         return loss
 
+    def _test_step(self, batch):
+        img, target = batch
+        pred, kl = self(x=img)
+        pred_imgs = [pred]
+
+        for _ in range(self.refine_steps):
+            pred, kl = self(x=img, y=pred)
+            pred_imgs.append(pred)
+
+        mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
+        loss = mse_loss + (self.hparams.kl_coeff*kl)
+        loss = loss.mean()
+
+        ssim_val = ssim(pred, target)
+
+        logs = {
+            "mse_loss": mse_loss.mean(),
+            "kl": kl.mean(),
+            "scaled_kl": self.hparams.kl_coeff*kl.mean(),
+            "loss": loss,
+            "ssim": ssim_val,
+        }
+
+        img_logs = {
+            "input": img[0].squeeze(0),
+            "pred_imgs": [pred[0] for pred in pred_imgs],
+            "target": target[0]
+        }
+
+        return loss, logs, img_logs
+
     def validation_step(self, batch, batch_idx):
-        loss, logs, img_logs = self.step(batch)
+        loss, logs, img_logs = self._test_step(batch)
         self.log_dict({f"val_{k}": v for k, v in logs.items()})
 
         if self.hparams.log_tb_imgs and batch_idx % self.hparams.tb_img_freq == 0:
             self.logger.experiment.add_image('val_input', img_logs['input'], self.trainer.global_step)
-            self.logger.experiment.add_image('val_pred', img_logs['pred'], self.trainer.global_step)
             self.logger.experiment.add_image('val_target', img_logs['target'], self.trainer.global_step)
+
+            pred_img_w_refine = torchvision.utils.make_grid(img_logs['pred_imgs'])
+            self.logger.experiment.add_image('val_pred', pred_img_w_refine, self.trainer.global_step)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
