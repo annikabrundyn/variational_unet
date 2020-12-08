@@ -82,6 +82,7 @@ class VAEModel(pl.LightningModule):
         pred, kl = self(x=img)
         pred_imgs = [pred]
 
+        # iterative refining of predictions
         for _ in range(self.refine_steps):
             pred, kl = self(x=img, y=pred)
             pred_imgs.append(pred)
