@@ -31,7 +31,7 @@ class VAEModel(pl.LightningModule):
 
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
-        self.refine_steps = 2
+        self.refine_steps = 5
 
         self.save_hyperparameters()
 
