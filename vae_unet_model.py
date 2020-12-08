@@ -30,8 +30,6 @@ class VAEModel(pl.LightningModule):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
 
-        self.log_scale = nn.Parameter(torch.Tensor([0.0]))
-
         self.save_hyperparameters()
 
         self.net = VariationalUNet(resize)
@@ -42,11 +40,6 @@ class VAEModel(pl.LightningModule):
     def step(self, batch):
         img, target = batch
         pred, kl = self(img, target)
-
-        # output is parameters - sample pred from normal distribution
-        scale = torch.exp(self.log_scale)
-        dist = torch.distributions.Normal(pred, scale)
-        pred = dist.sample()
 
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
         loss = mse_loss + (self.hparams.kl_coeff*kl)
