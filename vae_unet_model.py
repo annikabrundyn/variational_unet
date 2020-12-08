@@ -59,11 +59,10 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
-        img_idx = torch.randint(0, len(img.data), (1,))
         img_logs = {
-            "input": img[img_idx].squeeze(),
-            "pred": pred[img_idx].squeeze(0),
-            "target": target[img_idx].squeeze(0)
+            "input": img[0].squeeze(0),
+            "pred": pred[0],
+            "target": target[0]
         }
 
         return loss, logs, img_logs
@@ -103,11 +102,10 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
-        img_idx = torch.randint(0, len(img.data), (1,))
         img_logs = {
-            "input": img[img_idx].squeeze(),
-            "pred_imgs": [pred[img_idx].squeeze(0) for pred in pred_imgs],
-            "target": target[img_idx].squeeze(0)
+            "input": img[0].squeeze(0),
+            "pred_imgs": [pred[0] for pred in pred_imgs],
+            "target": target[0]
         }
 
         return loss, logs, img_logs
@@ -169,6 +167,7 @@ if __name__ == "__main__":
         resize=args.resize,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
+        shuffle_val=True,
     )
 
     img, target = next(iter(dm.train_dataloader()))

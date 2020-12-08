@@ -132,6 +132,7 @@ class NYUDepthDataModule(pl.LightningDataModule):
             num_workers: int = 8,
             batch_size: int = 32,
             seed: int = 42,
+            shuffle_val: bool = False,
             *args,
             **kwargs,
     ):
@@ -142,6 +143,7 @@ class NYUDepthDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.seed = seed
+        self.shuffle_val = shuffle_val
 
         self.dataset = NYUDepth(self.data_dir, frames_per_sample=self.frames_per_sample, resize=self.resize)
 
@@ -160,7 +162,7 @@ class NYUDepthDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         loader = DataLoader(self.valset,
                             batch_size=self.batch_size,
-                            shuffle=False,
+                            shuffle=self.shuffle_val,
                             num_workers=self.num_workers)
         return loader
 

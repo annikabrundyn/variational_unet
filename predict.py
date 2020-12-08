@@ -41,6 +41,7 @@ if __name__ == "__main__":
         resize=args.resize,
         batch_size=1,
         num_workers=args.num_workers,
+        shuffle_val=False,
     )
 
     # sanity check
