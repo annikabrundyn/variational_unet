@@ -59,7 +59,7 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
-        img_idx = torch.randint(0, self.hparams.batch_size, (1,))
+        img_idx = torch.randint(0, len(img.data), (1,))
         img_logs = {
             "input": img[img_idx].squeeze(),
             "pred": pred[img_idx].squeeze(0),
@@ -103,7 +103,7 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
-        img_idx = torch.randint(0, self.hparams.batch_size, (1,))
+        img_idx = torch.randint(0, len(img.data), (1,))
         img_logs = {
             "input": img[img_idx].squeeze(),
             "pred_imgs": [pred[img_idx].squeeze(0) for pred in pred_imgs],
