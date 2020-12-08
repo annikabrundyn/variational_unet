@@ -148,9 +148,6 @@ class NYUDepthDataModule(pl.LightningDataModule):
         val_len = int(val_split * len(self.dataset))
         train_len = len(self.dataset) - val_len
 
-        print(train_len)
-        print(val_len)
-
         self.trainset, self.valset = random_split(self.dataset, lengths=[train_len, val_len])
 
     def train_dataloader(self):
@@ -166,3 +163,4 @@ class NYUDepthDataModule(pl.LightningDataModule):
                             shuffle=False,
                             num_workers=self.num_workers)
         return loader
+
