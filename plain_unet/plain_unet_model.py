@@ -83,7 +83,7 @@ class PlainUNet(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
+        opt = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         return [opt]
 
     @staticmethod

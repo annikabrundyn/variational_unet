@@ -122,7 +122,7 @@ class VAEModel(pl.LightningModule):
             self.logger.experiment.add_image('val_pred', pred_img_w_refine, self.trainer.global_step)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
