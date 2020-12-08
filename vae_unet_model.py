@@ -25,6 +25,7 @@ class VAEModel(pl.LightningModule):
             log_tb_imgs: bool = False,
             tb_img_freq: int = 10000,
             save_img_freq: int = 50,
+            batch_size: int = 128,
             **kwargs
     ):
         super().__init__()
@@ -58,10 +59,11 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
+        img_idx = torch.randint(0, self.hparams.batch_size, (1,))
         img_logs = {
-            "input": img[0].squeeze(0),
-            "pred": pred[0],
-            "target": target[0]
+            "input": img[img_idx].squeeze(),
+            "pred": pred[img_idx].squeeze(0),
+            "target": target[img_idx].squeeze(0)
         }
 
         return loss, logs, img_logs
@@ -101,10 +103,11 @@ class VAEModel(pl.LightningModule):
             "ssim": ssim_val,
         }
 
+        img_idx = torch.randint(0, self.hparams.batch_size, (1,))
         img_logs = {
-            "input": img[0].squeeze(0),
-            "pred_imgs": [pred[0] for pred in pred_imgs],
-            "target": target[0]
+            "input": img[img_idx].squeeze(),
+            "pred_imgs": [pred[img_idx].squeeze(0) for pred in pred_imgs],
+            "target": target[img_idx].squeeze(0)
         }
 
         return loss, logs, img_logs
