@@ -35,7 +35,8 @@ class PlainUNet(pl.LightningModule):
                         bilinear=bilinear)
 
     def forward(self, x):
-        return self.net(x)
+        yhat = self.net(x).sigmoid()
+        return yhat
 
     def step(self, batch):
         img, target = batch
@@ -82,7 +83,7 @@ class PlainUNet(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        opt = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
 
     @staticmethod
