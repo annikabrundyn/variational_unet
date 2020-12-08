@@ -14,8 +14,8 @@ class PlainUNet(pl.LightningModule):
     def __init__(
             self,
             lr: float = 0.001,
-            num_classes: int = 1,  #num of channels in output - b/w depth maps
-            input_channels: int = 1,  #num of input frames
+            num_classes: int = 1,
+            input_channels: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False,
