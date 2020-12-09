@@ -26,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
     parser.add_argument("--output_dir", required=True, type=str, help="output directory")
     parser.add_argument("--model_name", required=True, type=str)
-    parser.add_argument("--val_dl", type=bool, default=True, help="which dl")
+    parser.add_argument("--val_dl", action='store_true', required=True, help="which dl")
     args = parser.parse_args()
 
     #inputs_dir_path = os.path.join(args.output_dir, "inputs")
