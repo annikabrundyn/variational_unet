@@ -26,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
     parser.add_argument("--output_dir", required=True, type=str, help="output directory")
     parser.add_argument("--model_name", required=True, type=str)
+    parser.add_argument("--val_dl", type=bool, default=True, help="which dl")
     args = parser.parse_args()
 
     #inputs_dir_path = os.path.join(args.output_dir, "inputs")
@@ -56,8 +57,13 @@ if __name__ == "__main__":
     print("model instance created")
     print("lightning version", pl.__version__)
 
+    if args.val_dl:
+        dl = dm.val_dataloader()
+    else:
+        dl = dm.test_dataloader()
+
     outputs = []
-    for idx, batch in enumerate(tqdm(dm.val_dataloader())):
+    for idx, batch in enumerate(tqdm(dl)):
         img, target = batch
         img = img.to(device)
         pred, _ = model(x=img)
@@ -70,7 +76,7 @@ if __name__ == "__main__":
 
         torchvision.utils.save_image(pred_imgs[-1], fp=os.path.join(pred_dir, f"fin_pred_{idx}.png"))
 
-        if idx % 500 == 0:
+        if idx % 100 == 0:
             pred_img_w_refine = torchvision.utils.make_grid(pred_imgs)
             torchvision.utils.save_image(pred_img_w_refine, fp=os.path.join(pred_dir, f"fin_pred_refine{idx}.png"))
 
