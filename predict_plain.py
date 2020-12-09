@@ -8,7 +8,7 @@ import torchvision
 from argparse import ArgumentParser
 
 from data import NYUDepthDataModule
-from unet import UNet
+from plain_unet_model import PlainUNet
 
 
 if __name__ == "__main__":
