@@ -72,7 +72,3 @@ if __name__ == "__main__":
 
         torchvision.utils.save_image(pred_imgs[-1], fp=os.path.join(pred_dir, f"fin_pred_{idx}.png"))
 
-        if idx % 50 == 0:
-            pred_img_w_refine = torchvision.utils.make_grid(pred_imgs)
-            torchvision.utils.save_image(pred_img_w_refine, fp=os.path.join(pred_dir, f"fin_pred_refine{idx}.png"))
-
