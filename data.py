@@ -43,6 +43,15 @@ class NYUDepth(Dataset):
         self.frames_per_sample = frames_per_sample
         img_list = self.read_image_list(os.path.join(root_dir, '{:s}.csv'.format(image_set)))
 
+        if self.image_set == "train":
+            self.all_samples = self.setup_train_samples(img_list)
+        else:
+            self.all_samples = [x[0].split('/')[2] for x in img_list]
+            self.all_samples = [[(x.split('_')[0])] for x in self.all_samples]
+
+
+
+    def setup_train_samples(self, img_list):
         for (img_filename, target_filename) in img_list:
             key, jpg = img_filename.split('/')[2:]
             frame_num = jpg.split('.')[0]
@@ -76,7 +85,7 @@ class NYUDepth(Dataset):
 
         # shuffle
         random.shuffle(self.all_samples)
-
+        return self.all_samples
 
     def read_image_list(self, filename):
         """
@@ -102,12 +111,19 @@ class NYUDepth(Dataset):
 
     def __getitem__(self, index):
         sample = self.all_samples[index]
-        video_name = sample[0]
-        frames = sample[1]
+
+        if self.image_set == "train":
+            video_name = sample[0]
+            frames = sample[1]
+        else:
+            frames = sample
 
         images = []
         for frame in frames:
-            img_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.jpg'.format(frame))
+            if self.image_set == "train":
+                img_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.jpg'.format(frame))
+            else:
+                img_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), '{}_colors.png'.format(frame))
             image = Image.open(img_path)
             image = self.img_transform(image)   #TODO: applying multiple times
             images.append(image)
@@ -115,12 +131,14 @@ class NYUDepth(Dataset):
         image_tensor = torch.stack(images)
         image_tensor = torch.squeeze(image_tensor, 1)
 
-        target_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.png'.format(frames[-1]))
+        if self.image_set == "train":
+            target_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.png'.format(frames[-1]))
+        else:
+            target_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set),'{}_depth.png'.format(frames[-1]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
         return image_tensor, target
-
 
 class NYUDepthDataModule(pl.LightningDataModule):
     def __init__(
@@ -152,6 +170,11 @@ class NYUDepthDataModule(pl.LightningDataModule):
 
         self.trainset, self.valset = random_split(self.dataset, lengths=[train_len, val_len])
 
+        self.testset = NYUDepth(self.data_dir,
+                                image_set="test",
+                                frames_per_sample=self.frames_per_sample,
+                                resize=self.resize)
+
     def train_dataloader(self):
         loader = DataLoader(self.trainset,
                             batch_size=self.batch_size,
@@ -166,3 +189,9 @@ class NYUDepthDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
+    def test_dataloader(self):
+        loader = DataLoader(self.testset,
+                            batch_size=self.batch_size,
+                            shuffle=False,
+                            num_workers=self.num_workers)
+        return loader
